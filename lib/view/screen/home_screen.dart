@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:news_app_with_api/api/api_controller.dart';
-import 'package:news_app_with_api/view/screen/details_screen.dart';
+import 'package:news_app_with_api/api/api_setting.dart';
 
 import '../../model/news.dart';
+import '../../model/nvb.dart';
+import '../bnv/bnb_home.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -12,25 +14,42 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<List<News>> _future;
+  late Future<List<News>> homeFuture;
+  late Future<List<News>> healthFuture;
+  late Future<List<News>> scienceFuture;
+  late Future<List<News>> sportFuture;
+  late Future<List<News>> technologyFuture;
+
+  int currentIndex = 0;
 
   @override
   void initState() {
     // TODO: implement initState
-    _future = ApiController().readNews();
+    homeFuture = ApiController().homeNews(apiUri: ApiSetting.home);
+    healthFuture = ApiController().homeNews(apiUri: ApiSetting.health);
+    sportFuture = ApiController().homeNews(apiUri: ApiSetting.sports);
+    technologyFuture = ApiController().homeNews(apiUri: ApiSetting.technology);
+    scienceFuture = ApiController().homeNews(apiUri: ApiSetting.science);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    List<BNV> data = <BNV>[
+      BNV(future: homeFuture, title: 'Generals News'),
+      BNV(future: healthFuture, title: 'Health News'),
+      BNV(future: sportFuture, title: 'Sport News'),
+      BNV(future: technologyFuture, title: 'Technology News'),
+      BNV(future: scienceFuture, title: 'Science News'),
+    ];
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'News App',
-          style: TextStyle(
+        title: Text(
+          data[currentIndex].title,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black,
             fontSize: 22,
@@ -38,79 +57,56 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         centerTitle: true,
       ),
-      body: FutureBuilder<List<News>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: Colors.red,
-              ),
-            );
-          } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-            return Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: ListView.builder(
-                itemCount: snapshot.data!.length,
-                itemBuilder: (context, index) => GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                              DetailsScreen(data: snapshot.data![index]),
-                      ),
-                    );
-                  },
-                  child: Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Visibility(
-                        visible: snapshot.data![index].urlToImage != null,
-                        child: Column(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Image.network(
-                                snapshot.data![index].urlToImage ?? '',
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Align(
-                              alignment: Alignment.topLeft,
-                              child: Text(
-                                snapshot.data![index].author ?? 'Anonymous',
-                              ),
-                            ),
-                            const SizedBox(height: 18)
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          } else {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(
-                    Icons.warning_amber,
-                    color: Colors.red,
-                  ),
-                  SizedBox(height: 10),
-                  Text("you don't have any News ..!"),
-                ],
-              ),
-            );
-          }
+      body: BNVHome(future: data[currentIndex].future),
+      bottomNavigationBar: BottomNavigationBar(
+        elevation: 0,
+        backgroundColor: Colors.tealAccent,
+        type: BottomNavigationBarType.fixed,
+        fixedColor: Colors.black,
+        currentIndex: currentIndex,
+        onTap: (value) {
+          setState(() {
+            currentIndex = value;
+            print(currentIndex);
+          });
         },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.home_outlined,
+              color: Colors.black,
+            ),
+            activeIcon: Icon(Icons.home_filled),
+            label: 'General',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.health_and_safety_outlined),
+            label: 'Health',
+            activeIcon: Icon(
+              Icons.health_and_safety_rounded,
+            ),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.sports_bar_outlined,
+              color: Colors.black,
+            ),
+            activeIcon: Icon(Icons.sports),
+            label: 'Sport',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.electric_bolt_outlined),
+            label: 'Technology',
+            activeIcon: Icon(
+              Icons.electric_bolt,
+            ),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.science_outlined),
+            label: 'Science',
+            activeIcon: Icon(Icons.science),
+          ),
+        ],
       ),
     );
   }
